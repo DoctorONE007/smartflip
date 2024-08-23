@@ -2,7 +2,7 @@ package org.drone.flipper.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.drone.flipper.model.Flat;
+import org.drone.flipper.model.db.Flat;
 import org.drone.flipper.repository.FlatRepository;
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -14,7 +14,6 @@ import org.jsoup.select.Elements;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
-import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -45,10 +44,8 @@ public class CianParser {
     private final List<String> analyzedCianIds = new ArrayList<>();
     private List<String> previouslyAnalyzedCianIds = new ArrayList<>();
 
-
-    //        @Scheduled(fixedDelay = 300000)
     @Scheduled(cron = "0 */6 * * * *")
-    public void start() throws IOException, InterruptedException {
+    public void start() {
         analyzedCianIds.clear();
         for (int i = 1; i < 2; i++) {
             log.info("Parsing page {}", i);
@@ -62,15 +59,12 @@ public class CianParser {
             for (String cianId : cianIds) {
                 analyzedCianIds.add(cianId);
                 if (previouslyAnalyzedCianIds.contains(cianId) || !parseFlat(cianId)) {
-//                    log.info("The end of parsing. Choosen flats {}", finalCianIds);
-//                    finalCianIds.clear();
-//                    previouslyAnalyzedCianIds = new ArrayList<>(analyzedCianIds);
                     break;
                 }
             }
 
         }
-        log.info("The end of parsing. Choosen flats {}", finalCianIds);
+        log.info("The end of parsing. Chosen flats {}", finalCianIds);
         finalCianIds.clear();
         previouslyAnalyzedCianIds = new ArrayList<>(analyzedCianIds);
     }
@@ -136,7 +130,6 @@ public class CianParser {
         return finalUrl;
     }
 
-
     public String sendRequest(HttpRequest request) {
         int retryCount = 0;
         int statusCode = 0;
@@ -156,7 +149,6 @@ public class CianParser {
 
         return response.body();
     }
-
 
     public List<String> parsePageWithAllFlats(String response) {
 
@@ -194,7 +186,7 @@ public class CianParser {
 
     }
 
-    public boolean parseFlat(String cianId) throws InterruptedException, IOException {
+    public boolean parseFlat(String cianId) {
         log.info("Start parsing flat {}", cianId);
 
         if (flatRepository.existsByCianId(Integer.parseInt(cianId))) {
@@ -215,7 +207,6 @@ public class CianParser {
             currentPrice = jsonPrice.getJSONObject("priceInfo").getJSONObject("priceTag").getString("offerPriceShort").replace(",", ".");
         } catch (JSONException e) {
             log.error("Error parsing price in flat {}", cianId);
-//            log.error(e.getMessage(), e);
             return true;
         }
 
@@ -230,7 +221,6 @@ public class CianParser {
 
                 Flat f = new Flat();
                 f.setCianId(Integer.parseInt(cianId));
-//                f.setPrice((int) (currentPriceDouble * 1000000));
                 f.setLowCianPrice((int) (lowestPriceDouble * 1000000));
                 f.setPriceGap(100 - (currentPriceDouble * 100 / lowestPriceDouble));
 
@@ -249,8 +239,6 @@ public class CianParser {
                 f.setIsLastFloor(f.getFloor() == f.getBuildingFloors());
                 f.setM2(getM2(jsonArray));
                 f.setRooms(getRooms(jsonArray));
-//                f.setPhotos(getPhotos(jsonArray));
-                f.setPhotos(null);
                 f.setTime(LocalDateTime.now());
                 f.setNearbyFlatsMessage(getNearbyFlatsMessage(cianId, f.getPrice(), f.getRooms(), f.getM2()));
 
@@ -260,14 +248,9 @@ public class CianParser {
                 log.error(e.getMessage(), e);
                 return true;
             }
-//            }
-
-
         }
-
         return true;
     }
-
 
     private int getPrice(JSONArray jsonArray) {
         JSONObject bargainTerms = null;
@@ -277,7 +260,7 @@ public class CianParser {
                 break;
             }
         }
-        String price = bargainTerms.get("price").toString();
+        String price = Objects.requireNonNull(bargainTerms).get("price").toString();
 
         return Integer.parseInt(price);
     }
@@ -295,7 +278,6 @@ public class CianParser {
 
         String htmlElement = "";
         for (Element script : scripts) {
-//            System.out.println(script.html());
             if (script.html().contains("window._cianConfig['frontend-offer-card']")) {
                 htmlElement = script.html();
             }
@@ -303,68 +285,54 @@ public class CianParser {
         htmlElement = htmlElement.replace("window._cianConfig = window._cianConfig || {};\n" +
                 "window._cianConfig['frontend-offer-card'] = (window._cianConfig['frontend-offer-card'] || []).concat([", "{\"test\":[");
         htmlElement = htmlElement.replace("]);", "]}");
-//        System.out.println(htmlElement);
+
         JSONObject jsonObject = new JSONObject(htmlElement);
 
-        JSONArray jsonArray = jsonObject.getJSONArray("test");
-
-        return jsonArray;
+        return jsonObject.getJSONArray("test");
     }
 
     private int getViewsCount(JSONArray jsonArray) {
-
-//        System.out.println(jsonArray);
-
         JSONObject stats = null;
+
         for (int i = 0; i < jsonArray.length(); i++) {
             if (jsonArray.getJSONObject(i).has("key") && jsonArray.getJSONObject(i).getString("key").equals("defaultState")) {
                 stats = jsonArray.getJSONObject(i).getJSONObject("value").getJSONObject("offerData").getJSONObject("stats");
                 break;
             }
         }
-        String totalStats = stats.get("total").toString();
+        String totalStats = Objects.requireNonNull(stats).get("total").toString();
 
         return Integer.parseInt(totalStats);
     }
 
     private int getPriceM2(JSONArray jsonArray) {
         JSONObject priceInfo = null;
+
         for (int i = 0; i < jsonArray.length(); i++) {
             if (jsonArray.getJSONObject(i).has("key") && jsonArray.getJSONObject(i).getString("key").equals("defaultState")) {
                 priceInfo = jsonArray.getJSONObject(i).getJSONObject("value").getJSONObject("offerData").getJSONObject("priceInfo");
                 break;
             }
         }
-        String pricePerSquareValue = priceInfo.get("pricePerSquareValue").toString();
+        String pricePerSquareValue = Objects.requireNonNull(priceInfo).get("pricePerSquareValue").toString();
 
         return Integer.parseInt(pricePerSquareValue);
     }
 
     private String getAddress(JSONArray jsonArray) {
-        JSONArray address = null;
-        for (int i = 0; i < jsonArray.length(); i++) {
-            if (jsonArray.getJSONObject(i).has("key") && jsonArray.getJSONObject(i).getString("key").equals("defaultState")) {
-                address = jsonArray.getJSONObject(i).getJSONObject("value").getJSONObject("offerData").getJSONObject("offer").getJSONObject("geo").getJSONArray("address");
-                break;
-            }
-        }
+        JSONArray address = getAddressNonProcessed(jsonArray);
+
         StringBuilder resAddress = new StringBuilder();
         for (int i = 0; i < Objects.requireNonNull(address).length(); i++) {
             resAddress.append(address.getJSONObject(i).get("fullName").toString()).append(" ");
         }
 
         return resAddress.toString();
-
     }
 
     private String getDistrict(JSONArray jsonArray) {
-        JSONArray address = null;
-        for (int i = 0; i < jsonArray.length(); i++) {
-            if (jsonArray.getJSONObject(i).has("key") && jsonArray.getJSONObject(i).getString("key").equals("defaultState")) {
-                address = jsonArray.getJSONObject(i).getJSONObject("value").getJSONObject("offerData").getJSONObject("offer").getJSONObject("geo").getJSONArray("address");
-                break;
-            }
-        }
+        JSONArray address = getAddressNonProcessed(jsonArray);
+
         String district = "";
         for (int i = 0; i < Objects.requireNonNull(address).length(); i++) {
             if (address.getJSONObject(i).get("type").toString().equals("okrug")) {
@@ -380,14 +348,19 @@ public class CianParser {
         return district;
     }
 
-    private String getMetro(JSONArray jsonArray) {
-        JSONArray metro = null;
+    private JSONArray getAddressNonProcessed(JSONArray jsonArray) {
+        JSONArray address = null;
         for (int i = 0; i < jsonArray.length(); i++) {
             if (jsonArray.getJSONObject(i).has("key") && jsonArray.getJSONObject(i).getString("key").equals("defaultState")) {
-                metro = jsonArray.getJSONObject(i).getJSONObject("value").getJSONObject("offerData").getJSONObject("offer").getJSONObject("geo").getJSONArray("undergrounds");
+                address = jsonArray.getJSONObject(i).getJSONObject("value").getJSONObject("offerData").getJSONObject("offer").getJSONObject("geo").getJSONArray("address");
                 break;
             }
         }
+        return address;
+    }
+
+    private String getMetro(JSONArray jsonArray) {
+        JSONArray metro = getMetroNonProcessed(jsonArray);
         StringBuilder resMetro = new StringBuilder();
         for (int i = 0; i < Objects.requireNonNull(metro).length(); i++) {
             if (metro.getJSONObject(i).get("travelType").toString().equals("walk") && !resMetro.toString().contains(metro.getJSONObject(i).get("name").toString())) {
@@ -401,17 +374,10 @@ public class CianParser {
     }
 
     private Short getMetroMinWalkTime(JSONArray jsonArray) {
-        JSONArray metro = null;
-        for (int i = 0; i < jsonArray.length(); i++) {
-            if (jsonArray.getJSONObject(i).has("key") && jsonArray.getJSONObject(i).getString("key").equals("defaultState")) {
-                metro = jsonArray.getJSONObject(i).getJSONObject("value").getJSONObject("offerData").getJSONObject("offer").getJSONObject("geo").getJSONArray("undergrounds");
-                break;
-            }
-        }
+        JSONArray metro = getMetroNonProcessed(jsonArray);
 
         short metroMinWalkTime = 100;
         short currentStationWalkTime;
-        StringBuilder resMetro = new StringBuilder();
         for (int i = 0; i < Objects.requireNonNull(metro).length(); i++) {
             if (metro.getJSONObject(i).get("travelType").toString().equals("walk")) {
                 currentStationWalkTime = Short.parseShort(metro.getJSONObject(i).get("travelTime").toString());
@@ -424,30 +390,19 @@ public class CianParser {
         return metroMinWalkTime == 100 ? null : metroMinWalkTime;
     }
 
-//    private String getDistrict(JSONArray jsonArray) {
-//        JSONArray address = null;
-//        for (int i = 0; i < jsonArray.length(); i++) {
-//            if (jsonArray.getJSONObject(i).has("key") && jsonArray.getJSONObject(i).getString("key").equals("defaultState")) {
-//                address = jsonArray.getJSONObject(i).getJSONObject("value").getJSONObject("offerData").getJSONObject("offer").getJSONObject("geo").getJSONArray("address");
-//                break;
-//            }
-//        }
-//        StringBuilder district = new StringBuilder();
-//        Objects.requireNonNull(Objects.requireNonNull(address).getJSONObject(2));
-//        district.append(address.getJSONObject(2).get("fullName").toString());
-//
-//        return district.toString();
-//
-//    }
-
-    private short getFloor(JSONArray jsonArray) {
-        JSONObject offer = null;
+    private JSONArray getMetroNonProcessed(JSONArray jsonArray) {
+        JSONArray metro = null;
         for (int i = 0; i < jsonArray.length(); i++) {
             if (jsonArray.getJSONObject(i).has("key") && jsonArray.getJSONObject(i).getString("key").equals("defaultState")) {
-                offer = jsonArray.getJSONObject(i).getJSONObject("value").getJSONObject("offerData").getJSONObject("offer");
+                metro = jsonArray.getJSONObject(i).getJSONObject("value").getJSONObject("offerData").getJSONObject("offer").getJSONObject("geo").getJSONArray("undergrounds");
                 break;
             }
         }
+        return metro;
+    }
+
+    private short getFloor(JSONArray jsonArray) {
+        JSONObject offer = getOfferNonProcessed(jsonArray);
 
         String floor = offer.get("floorNumber").toString();
 
@@ -455,13 +410,7 @@ public class CianParser {
     }
 
     private int getBuildingFloorsCount(JSONArray jsonArray) {
-        JSONObject offer = null;
-        for (int i = 0; i < jsonArray.length(); i++) {
-            if (jsonArray.getJSONObject(i).has("key") && jsonArray.getJSONObject(i).getString("key").equals("defaultState")) {
-                offer = jsonArray.getJSONObject(i).getJSONObject("value").getJSONObject("offerData").getJSONObject("offer");
-                break;
-            }
-        }
+        JSONObject offer = getOfferNonProcessed(jsonArray);
 
         String floor = offer.getJSONObject("building").get("floorsCount").toString();
 
@@ -469,13 +418,7 @@ public class CianParser {
     }
 
     private short getM2(JSONArray jsonArray) {
-        JSONObject offer = null;
-        for (int i = 0; i < jsonArray.length(); i++) {
-            if (jsonArray.getJSONObject(i).has("key") && jsonArray.getJSONObject(i).getString("key").equals("defaultState")) {
-                offer = jsonArray.getJSONObject(i).getJSONObject("value").getJSONObject("offerData").getJSONObject("offer");
-                break;
-            }
-        }
+        JSONObject offer = getOfferNonProcessed(jsonArray);
 
         String m2 = offer.get("totalArea").toString();
 
@@ -483,22 +426,14 @@ public class CianParser {
     }
 
     private short getRooms(JSONArray jsonArray) {
-        JSONObject offer = null;
-        for (int i = 0; i < jsonArray.length(); i++) {
-            if (jsonArray.getJSONObject(i).has("key") && jsonArray.getJSONObject(i).getString("key").equals("defaultState")) {
-                offer = jsonArray.getJSONObject(i).getJSONObject("value").getJSONObject("offerData").getJSONObject("offer");
-                break;
-            }
-        }
+        JSONObject offer = getOfferNonProcessed(jsonArray);
 
-//        String rooms = offer.get("roomsCount").toString();
         String rooms = offer.optString("roomsCount", "0");
 
         return Short.parseShort(rooms);
     }
 
-    private String getPhotos(JSONArray jsonArray) {
-
+    private JSONObject getOfferNonProcessed(JSONArray jsonArray) {
         JSONObject offer = null;
         for (int i = 0; i < jsonArray.length(); i++) {
             if (jsonArray.getJSONObject(i).has("key") && jsonArray.getJSONObject(i).getString("key").equals("defaultState")) {
@@ -507,19 +442,7 @@ public class CianParser {
             }
         }
 
-        JSONArray photosArray = offer.has("photos") ? offer.getJSONArray("photos") : null;
-        if (photosArray == null) {
-            return "";
-        }
-        StringBuilder photos = new StringBuilder();
-        for (int i = 0; i < photosArray.length(); i++) {
-            photos.append(photosArray.getJSONObject(i).get("fullUrl"));
-            if (i != photosArray.length() - 1) {
-                photos.append(", ");
-            }
-        }
-
-        return photos.toString();
+        return offer;
     }
 
     private String getNearbyFlatsMessage(String cianId, int price, short rooms, short m2) {
@@ -537,7 +460,7 @@ public class CianParser {
         Pattern pattern = Pattern.compile("\\d+");
         short offeredFlatM2;
         StringBuilder resultMessage = new StringBuilder();
-        Map<String,Integer> offeredFlats = new HashMap<>();
+        Map<String, Integer> offeredFlats = new HashMap<>();
         for (int i = 0; i < offers.length(); i++) {
             if (price < offers.getJSONObject(i).getDouble("totalPriceRur")) {
                 title = offers.getJSONObject(i).getString("title").split(",");
@@ -551,7 +474,6 @@ public class CianParser {
                                 minPrice = (int) Math.min(minPrice, offers.getJSONObject(i).getDouble("totalPriceRur"));
                                 maxPrice = (int) Math.max(maxPrice, offers.getJSONObject(i).getDouble("totalPriceRur"));
 
-//                                resultMessage.append("https://www.cian.ru").append(offers.getJSONObject(i).getString("url")).append("\n");
                                 offeredFlats.put("https://www.cian.ru" + offers.getJSONObject(i).getString("url") + "\n", (int) offers.getJSONObject(i).getDouble("totalPriceRur"));
                             }
                         }
@@ -561,11 +483,11 @@ public class CianParser {
             }
 
         }
-        if(!offeredFlats.isEmpty()){
+        if (!offeredFlats.isEmpty()) {
             offeredFlats.entrySet().stream().sorted(Map.Entry.comparingByValue()).forEach(stringIntegerEntry -> resultMessage.append(stringIntegerEntry.getKey()));
         }
         if (!resultMessage.isEmpty()) {
-            String prefix = "‼\uFE0FКонкуренты‼\uFE0F\n" + "\n" + "Диапазон цен: " + formatter.format(minPrice) + " *₽* - " + formatter.format(maxPrice) + " *₽*" + "\n\n";
+            String prefix = "‼️Конкуренты‼️\n" + "\n" + "Диапазон цен: " + formatter.format(minPrice) + " *₽* - " + formatter.format(maxPrice) + " *₽*" + "\n\n";
             resultMessage.insert(0, prefix);
             return resultMessage.toString();
         }

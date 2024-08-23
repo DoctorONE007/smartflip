@@ -1,4 +1,4 @@
-package org.drone.flipper.model;
+package org.drone.flipper.model.db;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -10,7 +10,7 @@ import java.time.LocalDateTime;
 
 @Data
 @Entity
-@Table(name = "flat")
+@Table(name = "flats")
 public class Flat {
 
     @Id
@@ -27,7 +27,7 @@ public class Flat {
     private short floor;
     private short m2;
     private short rooms;
-    private String photos;
+//    private String photos;
     private Short metroMinWalkTime;
     private Boolean isFirstFloor;
     private Boolean isLastFloor;

@@ -1,19 +1,23 @@
-package org.drone.flipper.model;
+package org.drone.flipper.model.db;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
 @Entity
 @Table(name = "filters")
+@AllArgsConstructor
+@NoArgsConstructor
 public class Filters {
 
     @Id
     private Long chatId;
-    private String telegramUsername;
+//    private String telegramUsername;
     private Integer priceLow;
     private Integer priceHigh;
     @Column(name = "m2_price_low")
@@ -32,7 +36,7 @@ public class Filters {
     private String districts;
     private Boolean notFirstFloor;
     private Boolean notLastFloor;
-    private Boolean active;
-    @Column(name = "next_payment")
-    private String nextPayment;
+//    private Boolean active;
+//    @Column(name = "next_payment")
+//    private String nextPayment;
 }

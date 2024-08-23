@@ -1,9 +1,9 @@
-package org.drone.flipper.model;
+package org.drone.flipper.model.request;
 
 import lombok.Data;
 
 @Data
-public class RefMoneyRequest {
+public class ReferrerMoneyRequest {
     String userId;
     String cardNumber;
     String amountRub;

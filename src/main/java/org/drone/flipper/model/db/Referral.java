@@ -1,4 +1,4 @@
-package org.drone.flipper.model;
+package org.drone.flipper.model.db;
 
 import jakarta.persistence.*;
 import lombok.Data;
@@ -6,11 +6,11 @@ import lombok.NoArgsConstructor;
 
 @Data
 @Entity
-@Table(name = "ref")
+@Table(name = "referrals")
 @NoArgsConstructor
-public class Ref {
+public class Referral {
 
-    public Ref(String userId, String cardNumber, String amountRub) {
+    public Referral(String userId, String cardNumber, String amountRub) {
         this.userId = userId;
         this.cardNumber = cardNumber;
         this.amountRub = amountRub;

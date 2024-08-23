@@ -1,4 +1,4 @@
-package org.drone.flipper.model;
+package org.drone.flipper.model.response;
 
 import lombok.Data;
 
