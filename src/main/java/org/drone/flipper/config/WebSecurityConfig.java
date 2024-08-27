@@ -18,6 +18,7 @@ public class WebSecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .httpBasic(withDefaults())
                 .authorizeHttpRequests((requests) -> requests
+                        .requestMatchers("/paymentWebhook").permitAll()
                         .anyRequest().authenticated()
                 );
 

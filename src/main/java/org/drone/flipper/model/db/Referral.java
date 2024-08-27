@@ -19,7 +19,10 @@ public class Referral {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long transactionId;
+    @Column(columnDefinition = "text")
     private String userId;
+    @Column(columnDefinition = "text")
     private String cardNumber;
+    @Column(columnDefinition = "text")
     private String amountRub;
 }

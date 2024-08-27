@@ -72,9 +72,13 @@ public class FlatsController {
     @PostMapping("paymentWebhook")
     public ResponseEntity<?> paymentWebhook(@RequestParam String nextPayment, @RequestParam String consumerTelegramId) {
         //todo возможно надо задержку тк юзер может не создаться
+        //todo при закрытии приходит пустая строка в nextPayment
         log.info("paymentWebhook: {}, {}", nextPayment, consumerTelegramId);
 
         if (consumerTelegramId != null && !consumerTelegramId.isEmpty()) {
+            if(nextPayment != null && nextPayment.isEmpty()){
+                nextPayment = "-";
+            }
             dbService.setNextPaymentByChatId(consumerTelegramId, nextPayment);
         }
 

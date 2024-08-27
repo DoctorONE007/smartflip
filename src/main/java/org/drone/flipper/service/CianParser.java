@@ -28,9 +28,8 @@ import java.util.regex.Pattern;
 //todo подумать с квартирами в начале новой страницы, дубль и прерывание (случай с парсингом нескольких страниц)
 //todo подумать с квартирами, которые не в базе, но мы их уже парсили (случай с парсингом нескольких страниц)
 //todo добавить телефон
-//todo в квартирах где до метрор только на машине проставляется null
-//todo подумать про фото, пока убрал, чтобы не засоряло
-//todo бесконечный цикл при отправке запросов в циан
+//todo в квартирах где до метро только на машине проставляется null
+//todo бесконечный цикл при отправке запросов в циан - done/test
 
 
 @Slf4j
@@ -54,6 +53,9 @@ public class CianParser {
                     .GET()
                     .build();
             String response = sendRequest(request);
+            if(response == null){
+                continue;
+            }
             List<String> cianIds = parsePageWithAllFlats(response);
 
             for (String cianId : cianIds) {
@@ -135,6 +137,10 @@ public class CianParser {
         int statusCode = 0;
         HttpResponse<String> response = null;
         do {
+            if(retryCount>7){
+                log.error("Cian is not responding for {}", request.uri());
+                return null;
+            }
             try (HttpClient client = HttpClient.newBuilder()
                     .followRedirects(HttpClient.Redirect.NORMAL)
                     .build()) {
@@ -197,6 +203,9 @@ public class CianParser {
                 .GET()
                 .build();
         String response = sendRequest(request);
+        if(response == null){
+            return true;
+        }
 
         JSONObject jsonPrice = new JSONObject(response);
         String lowestPrice;
@@ -453,6 +462,9 @@ public class CianParser {
                 .POST(HttpRequest.BodyPublishers.ofString("{\"cianOfferId\":" + cianId + "}"))
                 .build();
         String response = sendRequest(request);
+        if (response == null){
+            return "";
+        }
         JSONObject jsonObject = new JSONObject(response);
         JSONArray offers = jsonObject.getJSONArray("offers");
         String[] title;

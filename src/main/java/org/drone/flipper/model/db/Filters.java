@@ -17,7 +17,6 @@ public class Filters {
 
     @Id
     private Long chatId;
-//    private String telegramUsername;
     private Integer priceLow;
     private Integer priceHigh;
     @Column(name = "m2_price_low")
@@ -33,10 +32,8 @@ public class Filters {
     private Short roomsLow;
     private Short roomsHigh;
     private Short metroMaxTime;
+    @Column(columnDefinition = "text")
     private String districts;
     private Boolean notFirstFloor;
     private Boolean notLastFloor;
-//    private Boolean active;
-//    @Column(name = "next_payment")
-//    private String nextPayment;
 }

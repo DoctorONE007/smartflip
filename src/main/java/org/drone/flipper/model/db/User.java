@@ -17,8 +17,9 @@ public class User {
 
     @Id
     private Long chatId;
+    @Column(columnDefinition = "text")
     private String telegramUsername;
     private Boolean isActive;
-    @Column(name = "next_payment")
+    @Column(name = "next_payment", columnDefinition = "text")
     private String nextPayment;
 }
