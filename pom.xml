@@ -10,12 +10,12 @@
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
     <groupId>org.drone</groupId>
-    <artifactId>flipper_final</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
-    <name>flipper_final</name>
-    <description>flipper_final</description>
+    <artifactId>smartflip</artifactId>
+    <version>1.0.0</version>
+    <name>smartflip</name>
+    <description>smartflip</description>
     <properties>
-        <java.version>21</java.version>
+        <java.version>17</java.version>
     </properties>
     <dependencies>
         <dependency>

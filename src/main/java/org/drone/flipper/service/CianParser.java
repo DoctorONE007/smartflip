@@ -38,7 +38,7 @@ import java.util.regex.Pattern;
 public class CianParser {
 
     private final FlatRepository flatRepository;
-    private final NumberFormat formatter = NumberFormat.getInstance(Locale.of("ru"));
+    private final NumberFormat formatter = NumberFormat.getInstance(new Locale("ru"));
     private final List<String> finalCianIds = new ArrayList<>();
     private final List<String> analyzedCianIds = new ArrayList<>();
     private List<String> previouslyAnalyzedCianIds = new ArrayList<>();
@@ -53,7 +53,7 @@ public class CianParser {
                     .GET()
                     .build();
             String response = sendRequest(request);
-            if(response == null){
+            if (response == null) {
                 continue;
             }
             List<String> cianIds = parsePageWithAllFlats(response);
@@ -137,13 +137,14 @@ public class CianParser {
         int statusCode = 0;
         HttpResponse<String> response = null;
         do {
-            if(retryCount>7){
+            if (retryCount > 7) {
                 log.error("Cian is not responding for {}", request.uri());
                 return null;
             }
-            try (HttpClient client = HttpClient.newBuilder()
-                    .followRedirects(HttpClient.Redirect.NORMAL)
-                    .build()) {
+            try {
+                HttpClient client = HttpClient.newBuilder()
+                        .followRedirects(HttpClient.Redirect.NORMAL)
+                        .build();
                 Thread.sleep(retryCount > 4 ? 60000 : (retryCount > 2 ? 15000 : 5000));
                 response = client.send(request, HttpResponse.BodyHandlers.ofString());
                 statusCode = response.statusCode();
@@ -203,7 +204,7 @@ public class CianParser {
                 .GET()
                 .build();
         String response = sendRequest(request);
-        if(response == null){
+        if (response == null) {
             return true;
         }
 
@@ -462,7 +463,7 @@ public class CianParser {
                 .POST(HttpRequest.BodyPublishers.ofString("{\"cianOfferId\":" + cianId + "}"))
                 .build();
         String response = sendRequest(request);
-        if (response == null){
+        if (response == null) {
             return "";
         }
         JSONObject jsonObject = new JSONObject(response);
