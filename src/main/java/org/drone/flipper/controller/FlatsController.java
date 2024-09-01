@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.deser.DeserializationProblemHandler;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.drone.flipper.exception.UserNotFoundException;
 import org.drone.flipper.model.request.ReferrerMoneyRequest;
 import org.drone.flipper.model.db.Referral;
 import org.drone.flipper.model.request.ConstructFiltersRequest;
@@ -71,7 +72,7 @@ public class FlatsController {
 
     @PostMapping("paymentWebhook")
     public ResponseEntity<?> paymentWebhook(@RequestParam String nextPayment, @RequestParam String consumerTelegramId) {
-        //todo возможно надо задержку тк юзер может не создаться
+        //todo возможно надо задержку тк юзер может не создаться - done/test
         //todo при закрытии приходит пустая строка в nextPayment
         log.info("paymentWebhook: {}, {}", nextPayment, consumerTelegramId);
 
@@ -79,7 +80,11 @@ public class FlatsController {
             if(nextPayment != null && nextPayment.isEmpty()){
                 nextPayment = "-";
             }
-            dbService.setNextPaymentByChatId(consumerTelegramId, nextPayment);
+            try {
+                dbService.setNextPaymentByChatId(consumerTelegramId, nextPayment);
+            } catch (UserNotFoundException e){
+                log.error("UserNotFoundException: {}", e.getMessage());
+            }
         }
 
         return ResponseEntity.ok().build();
@@ -89,7 +94,7 @@ public class FlatsController {
     public ResponseEntity<?> refMoneyToPay(@RequestBody ReferrerMoneyRequest request) {
         log.info("refMoneyToPay: {}", request.toString());
 
-        dbService.saveReferral(new Referral(request.getUserId(), request.getCardNumber(), request.getAmountRub()));
+        dbService.saveReferral(new Referral(request.getUserId(), request.getPhoneNumber(), request.getBankName(), request.getAmountRub()));
         tgMessageSender.sendToRefChat(request);
 
         return ResponseEntity.ok().build();

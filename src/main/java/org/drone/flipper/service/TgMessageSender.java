@@ -2,18 +2,19 @@ package org.drone.flipper.service;
 
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.drone.flipper.model.db.Filters;
 import org.drone.flipper.model.db.Flat;
 import org.drone.flipper.model.db.User;
+import org.drone.flipper.model.request.DeactivateUserRequest;
 import org.drone.flipper.model.request.ReferrerMoneyRequest;
 import org.drone.flipper.properties.Properties;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 
 import java.text.NumberFormat;
@@ -21,11 +22,11 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class TgMessageSender {
 
-    private static final Logger log = LoggerFactory.getLogger(TgMessageSender.class);
     private final DbService dbService;
     private final Properties properties;
     private final RestTemplate restTemplate;
@@ -69,7 +70,13 @@ public class TgMessageSender {
                                 flat.getNearbyFlatsMessage();
                         message = replaceAllMarkdownChars(message);
                         HttpEntity<String> tgRequest = new HttpEntity<>("{\"chat_id\": \"" + filters.get().getChatId() + "\", \"text\": \"" + message + "\"," + "\"parse_mode\": \"MarkdownV2\"" + "}", headers);
-                        restTemplate.postForEntity("https://api.telegram.org/bot" + properties.getTgKey() + "/sendMessage", tgRequest, String.class);
+                        //todo не отправлять если forbidden - done
+                        try {
+                            restTemplate.postForEntity("https://api.telegram.org/bot" + properties.getTgKey() + "/sendMessage", tgRequest, String.class);
+                        } catch (HttpClientErrorException e) {
+                            log.error("User {} {} blocked the bot", user.getChatId(), user.getTelegramUsername());
+                            dbService.deactivateUser(new DeactivateUserRequest(user.getChatId()));
+                        }
                     }
             );
 
@@ -106,7 +113,7 @@ public class TgMessageSender {
     }
 
     public void sendToRefChat(ReferrerMoneyRequest request) {
-        String message = "Запрос на вывод средств от " + request.getUserId() + " на сумму " + request.getAmountRub() + " по карте " + request.getCardNumber();
+        String message = "Запрос на вывод средств от " + request.getUserId() + " на сумму " + request.getAmountRub() + " Номер телефона: " + request.getPhoneNumber() + " Банк: " + request.getBankName();
         HttpEntity<String> tgRequest = new HttpEntity<>("{\"chat_id\": \"" + "-4227941390" + "\", \"text\": \"" + message + "\"" + "}", headers);
         restTemplate.postForEntity("https://api.telegram.org/bot" + properties.getTgKey() + "/sendMessage", tgRequest, String.class);
     }

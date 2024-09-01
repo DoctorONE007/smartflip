@@ -10,9 +10,10 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class Referral {
 
-    public Referral(String userId, String cardNumber, String amountRub) {
+    public Referral(String userId, String phoneNumber, String bankName, String amountRub) {
         this.userId = userId;
-        this.cardNumber = cardNumber;
+        this.phoneNumber = phoneNumber;
+        this.bankName = bankName;
         this.amountRub = amountRub;
     }
 
@@ -22,7 +23,9 @@ public class Referral {
     @Column(columnDefinition = "text")
     private String userId;
     @Column(columnDefinition = "text")
-    private String cardNumber;
+    private String phoneNumber;
+    @Column(columnDefinition = "text")
+    private String bankName;
     @Column(columnDefinition = "text")
     private String amountRub;
 }

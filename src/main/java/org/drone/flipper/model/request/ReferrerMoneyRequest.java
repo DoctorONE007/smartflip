@@ -5,6 +5,7 @@ import lombok.Data;
 @Data
 public class ReferrerMoneyRequest {
     String userId;
-    String cardNumber;
+    String phoneNumber;
+    String bankName;
     String amountRub;
 }
