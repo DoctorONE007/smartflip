@@ -5,7 +5,7 @@ spring:
     name: smartflip
   datasource:
     hikari:
-      max-lifetime: 600000
+      max-lifetime: 30000
     driver-class-name: org.postgresql.Driver
     url: ${DB_URL}
     username: ${DB_USER}
