@@ -19,3 +19,5 @@ spring:
     scheduling:
       pool:
         size: 5
+server:
+  port: 80
