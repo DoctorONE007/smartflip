@@ -7,11 +7,11 @@ import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.drone.flipper.exception.UserNotFoundException;
-import org.drone.flipper.model.request.ReferrerMoneyRequest;
 import org.drone.flipper.model.db.Referral;
 import org.drone.flipper.model.request.ConstructFiltersRequest;
 import org.drone.flipper.model.request.CreateUserRequest;
 import org.drone.flipper.model.request.DeactivateUserRequest;
+import org.drone.flipper.model.request.ReferrerMoneyRequest;
 import org.drone.flipper.model.response.IsSubscriptionPaidResponse;
 import org.drone.flipper.model.response.NextPaymentResponse;
 import org.drone.flipper.service.DbService;
@@ -77,12 +77,12 @@ public class FlatsController {
         log.info("paymentWebhook: {}, {}", nextPayment, consumerTelegramId);
 
         if (consumerTelegramId != null && !consumerTelegramId.isEmpty()) {
-            if(nextPayment != null && nextPayment.isEmpty()){
+            if (nextPayment != null && nextPayment.isEmpty()) {
                 nextPayment = "-";
             }
             try {
                 dbService.setNextPaymentByChatId(consumerTelegramId, nextPayment);
-            } catch (UserNotFoundException e){
+            } catch (UserNotFoundException e) {
                 log.error("UserNotFoundException: {}", e.getMessage());
             }
         }

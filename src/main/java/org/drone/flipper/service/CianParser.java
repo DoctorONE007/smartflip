@@ -24,7 +24,7 @@ import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-//todo подумать с квартирами без цены
+//todo подумать с квартирами без цены - done/test
 //todo подумать с квартирами в начале новой страницы, дубль и прерывание (случай с парсингом нескольких страниц)
 //todo подумать с квартирами, которые не в базе, но мы их уже парсили (случай с парсингом нескольких страниц)
 //todo добавить телефон
@@ -39,13 +39,15 @@ public class CianParser {
 
     private final FlatRepository flatRepository;
     private final NumberFormat formatter = NumberFormat.getInstance(Locale.of("ru"));
-    private final List<String> finalCianIds = new ArrayList<>();
-    private final List<String> analyzedCianIds = new ArrayList<>();
-    private List<String> previouslyAnalyzedCianIds = new ArrayList<>();
+    private final Set<String> finalCianIds = new HashSet<>();
+    private final Set<String> analyzedCianIds = new HashSet<>();
+    private Set<String> previouslyAnalyzedCianIds = new HashSet<>();
+    private final Map<String, Integer> priceParsingErrorCianIdsMap = new HashMap<>();
 
     @Scheduled(cron = "0 */6 * * * *")
     public void start() {
         analyzedCianIds.clear();
+        finalCianIds.clear();
         for (int i = 1; i < 2; i++) {
             log.info("Parsing page {}", i);
             HttpRequest request = HttpRequest.newBuilder()
@@ -56,19 +58,21 @@ public class CianParser {
             if (response == null) {
                 continue;
             }
-            List<String> cianIds = parsePageWithAllFlats(response);
+
+            Set<String> cianIds = parsePageWithAllFlats(response);
+            log.info("priceParsingErrorCianIdsMap {}", priceParsingErrorCianIdsMap.keySet());
+            cianIds.addAll(priceParsingErrorCianIdsMap.keySet());
+            analyzedCianIds.addAll(cianIds);
+            cianIds.removeAll(previouslyAnalyzedCianIds);
+            log.info("Going to parse {}", cianIds);
 
             for (String cianId : cianIds) {
-                analyzedCianIds.add(cianId);
-                if (previouslyAnalyzedCianIds.contains(cianId) || !parseFlat(cianId)) {
-                    break;
-                }
+                parseFlat(cianId);
             }
 
         }
         log.info("The end of parsing. Chosen flats {}", finalCianIds);
-        finalCianIds.clear();
-        previouslyAnalyzedCianIds = new ArrayList<>(analyzedCianIds);
+        previouslyAnalyzedCianIds = new HashSet<>(analyzedCianIds);
     }
 
     public String createRequest(int pageNum) {
@@ -156,7 +160,7 @@ public class CianParser {
         return response.body();
     }
 
-    public List<String> parsePageWithAllFlats(String response) {
+    public Set<String> parsePageWithAllFlats(String response) {
 
         Document doc = Jsoup.parse(response);
         Elements scripts = doc.select("script");
@@ -182,7 +186,7 @@ public class CianParser {
                 break;
             }
         }
-        List<String> cianIds = new ArrayList<>();
+        Set<String> cianIds = new HashSet<>();
         for (int i = 0; i < Objects.requireNonNull(offers).length(); i++) {
             cianIds.add(offers.getJSONObject(i).get("cianId").toString());
         }
@@ -215,9 +219,17 @@ public class CianParser {
             lowestPrice = jsonPrice.getJSONObject("priceInfo").getJSONObject("priceTag").getString("estimationLowerBoundShort").replace(",", ".");
             currentPrice = jsonPrice.getJSONObject("priceInfo").getJSONObject("priceTag").getString("offerPriceShort").replace(",", ".");
         } catch (JSONException e) {
-            log.error("Error parsing price in flat {}", cianId);
+            priceParsingErrorCianIdsMap.merge(cianId, 1, Integer::sum);
+            if (priceParsingErrorCianIdsMap.get(cianId) > 2) {
+                log.error("Error parsing price in flat {}", cianId);
+                priceParsingErrorCianIdsMap.remove(cianId);
+            } else {
+                analyzedCianIds.remove(cianId);
+            }
             return true;
         }
+
+        priceParsingErrorCianIdsMap.remove(cianId);
 
         double lowestPriceDouble = Double.parseDouble(lowestPrice);
         double currentPriceDouble = Double.parseDouble(currentPrice);
@@ -226,8 +238,6 @@ public class CianParser {
             log.info("{} is good", cianId);
 
             try {
-
-
                 Flat f = new Flat();
                 f.setCianId(Integer.parseInt(cianId));
                 f.setLowCianPrice((int) (lowestPriceDouble * 1000000));

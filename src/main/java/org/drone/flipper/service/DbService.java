@@ -48,7 +48,7 @@ public class DbService {
                 (request.getDistricts() == null || request.getDistricts().trim().isEmpty()) ? null : List.of(request.getDistricts().split(" ")));
     }
 
-    public Optional<Filters> getFiltersByChatId(Long chatId){
+    public Optional<Filters> getFiltersByChatId(Long chatId) {
         return filtersRepository.findById(chatId);
     }
 
@@ -118,7 +118,7 @@ public class DbService {
         }
     }
 
-    @Scheduled(cron = "0 0 0 * * *")
+    @Scheduled(cron = "0 0 2 * * *")
     public void deleteOldFlats() {
         log.info("start deleting old flats");
         int numberOfDeletedFlats = flatRepository.deleteFlatsByTimeBefore(LocalDateTime.now().minusDays(30));
@@ -126,7 +126,7 @@ public class DbService {
     }
 
     //todo вернуть когда вернем оплату
-//    @Scheduled(cron = "0 0 4 * * *")
+//    @Scheduled(cron = "0 0 0 * * *")
     public void deactivateUsers() {
         List<User> users = getAllUsers();
         for (User user : users) {

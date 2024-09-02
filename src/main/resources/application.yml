@@ -4,6 +4,8 @@ spring:
   application:
     name: smartflip
   datasource:
+    hikari:
+      max-lifetime: 600000
     driver-class-name: org.postgresql.Driver
     url: ${DB_URL}
     username: ${DB_USER}
@@ -11,6 +13,7 @@ spring:
   jpa:
     hibernate:
       ddl-auto: update
+    open-in-view: false
   security:
     user:
       name: ${SMARTFLIP_USER}
