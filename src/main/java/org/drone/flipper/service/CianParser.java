@@ -38,7 +38,7 @@ import java.util.regex.Pattern;
 public class CianParser {
 
     private final FlatRepository flatRepository;
-    private final NumberFormat formatter = NumberFormat.getInstance(new Locale("ru"));
+    private final NumberFormat formatter = NumberFormat.getInstance(Locale.of("ru"));
     private final List<String> finalCianIds = new ArrayList<>();
     private final List<String> analyzedCianIds = new ArrayList<>();
     private List<String> previouslyAnalyzedCianIds = new ArrayList<>();
@@ -141,10 +141,9 @@ public class CianParser {
                 log.error("Cian is not responding for {}", request.uri());
                 return null;
             }
-            try {
-                HttpClient client = HttpClient.newBuilder()
-                        .followRedirects(HttpClient.Redirect.NORMAL)
-                        .build();
+            try (HttpClient client = HttpClient.newBuilder()
+                    .followRedirects(HttpClient.Redirect.NORMAL)
+                    .build()) {
                 Thread.sleep(retryCount > 4 ? 60000 : (retryCount > 2 ? 15000 : 5000));
                 response = client.send(request, HttpResponse.BodyHandlers.ofString());
                 statusCode = response.statusCode();

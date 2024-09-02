@@ -32,7 +32,7 @@ public class TgMessageSender {
     private final RestTemplate restTemplate;
     private final HttpHeaders headers = new HttpHeaders();
 
-    private final NumberFormat formatter = NumberFormat.getInstance(new Locale("ru"));
+    private final NumberFormat formatter = NumberFormat.getInstance(Locale.of("ru"));
 
     @PostConstruct
     private void postConstruct() {

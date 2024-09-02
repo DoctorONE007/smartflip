@@ -1,0 +1,21 @@
+flipper:
+  tg-key: ${TG_KEY}
+spring:
+  application:
+    name: smartflip
+  datasource:
+    driver-class-name: org.postgresql.Driver
+    url: ${DB_URL}
+    username: ${DB_USER}
+    password: ${DB_PASSWORD}
+  jpa:
+    hibernate:
+      ddl-auto: update
+  security:
+    user:
+      name: ${SMARTFLIP_USER}
+      password: ${SMARTFLIP_PASSWORD}
+  task:
+    scheduling:
+      pool:
+        size: 5
