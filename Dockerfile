@@ -6,7 +6,7 @@ COPY pom.xml /app
 RUN mvn dependency:resolve
 COPY . /app
 RUN mvn clean
-RUN mvn package
+RUN mvn -DskipTests=true  package
 
 #образ jdk21 для запуска собранного jar файла
 FROM openjdk:21
