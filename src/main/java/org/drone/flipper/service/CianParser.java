@@ -311,11 +311,17 @@ public class CianParser {
     }
 
     private int getViewsCount(JSONArray jsonArray) {
+        JSONObject offerData;
         JSONObject stats = null;
 
         for (int i = 0; i < jsonArray.length(); i++) {
             if (jsonArray.getJSONObject(i).has("key") && jsonArray.getJSONObject(i).getString("key").equals("defaultState")) {
-                stats = jsonArray.getJSONObject(i).getJSONObject("value").getJSONObject("offerData").getJSONObject("stats");
+                offerData = jsonArray.getJSONObject(i).getJSONObject("value").getJSONObject("offerData");
+                try {
+                    stats = offerData.getJSONObject("stats");
+                } catch (JSONException e) {
+                    return 0;
+                }
                 break;
             }
         }
@@ -399,9 +405,11 @@ public class CianParser {
         short currentStationWalkTime;
         for (int i = 0; i < Objects.requireNonNull(metro).length(); i++) {
             if (metro.getJSONObject(i).get("travelType").toString().equals("walk")) {
-                currentStationWalkTime = Short.parseShort(metro.getJSONObject(i).get("travelTime").toString());
-                if (currentStationWalkTime < metroMinWalkTime) {
-                    metroMinWalkTime = currentStationWalkTime;
+                if (metro.getJSONObject(i).get("travelTime").toString() != null) {
+                    currentStationWalkTime = Short.parseShort(metro.getJSONObject(i).get("travelTime").toString());
+                    if (currentStationWalkTime < metroMinWalkTime) {
+                        metroMinWalkTime = currentStationWalkTime;
+                    }
                 }
             }
         }
